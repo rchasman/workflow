@@ -1,5 +1,16 @@
 # @workflow/web-shared
 
+## 5.0.0-beta.9
+
+### Patch Changes
+
+- [#2041](https://github.com/vercel/workflow/pull/2041) [`799cc09`](https://github.com/vercel/workflow/commit/799cc09df36913ea9419d0cba052a1ebbf728910) Thanks [@mitul-s](https://github.com/mitul-s)! - Update zoom factor on the trace viewer timeline
+
+- [#2143](https://github.com/vercel/workflow/pull/2143) [`e8e5292`](https://github.com/vercel/workflow/commit/e8e52925ad9603b6d613a5bb94d7c17e4a7f26be) Thanks [@mitul-s](https://github.com/mitul-s)! - Fix `Button` hover, focus, and corner radius to match Geist. The dark-mode hover no longer relies on an unregistered Tailwind variant (it previously turned the inverted button's background dark/transparent depending on the consumer), the focus-visible ring is now rendered, and the `xs` size uses Geist's 4px tiny radius. Styles are written to work under both Tailwind v3 and v4.
+
+- Updated dependencies [[`ae37315`](https://github.com/vercel/workflow/commit/ae37315cb708b413f2ee9945c90a23a57dfd410d)]:
+  - @workflow/core@5.0.0-beta.9
+
 ## 5.0.0-beta.8
 
 ### Patch Changes
