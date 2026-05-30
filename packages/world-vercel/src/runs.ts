@@ -110,9 +110,22 @@ export async function listWorkflowRuns(
   const {
     workflowName,
     status,
+    attributes,
     pagination,
     resolveData = DEFAULT_RESOLVE_DATA_OPTION,
   } = params;
+
+  // Attribute filtering executes server-side in the platform `/v2/runs`
+  // endpoint, which does not yet accept an attributes filter. Forwarding it
+  // would be silently ignored and return every run instead of the requested
+  // subset, so fail loud rather than return wrong results. Lineage filtering
+  // (e.g. `$rootRunId`) on this backend is blocked until the endpoint supports it.
+  if (attributes && Object.keys(attributes).length > 0) {
+    throw new WorkflowWorldError(
+      'Filtering runs by attributes is not supported by the Vercel world yet — it requires server-side support in the /v2/runs endpoint.',
+      { code: 'attributes_filter_unsupported' }
+    );
+  }
 
   const searchParams = new URLSearchParams();
 
