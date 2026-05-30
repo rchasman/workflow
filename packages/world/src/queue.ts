@@ -33,6 +33,9 @@ export const RunInputSchema = z.object({
   workflowName: z.string(),
   specVersion: z.number(),
   executionContext: z.record(z.string(), z.any()).optional(),
+  // Initial run attributes (e.g. lineage keys), carried so the resilient-start
+  // path can set them when it creates the run from the queue message.
+  attributes: z.record(z.string(), z.string()).optional(),
 });
 export type RunInput = z.infer<typeof RunInputSchema>;
 

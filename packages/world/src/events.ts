@@ -239,6 +239,9 @@ const RunCreatedEventSchema = BaseEventSchema.extend({
     workflowName: z.string(),
     input: SerializedDataSchema,
     executionContext: z.record(z.string(), z.any()).optional(),
+    // Plaintext attributes to set on the run at creation, used for grouping
+    // and filtering runs in list (including reserved keys the runtime sets).
+    attributes: z.record(z.string(), z.string()).optional(),
   }),
 });
 
@@ -259,6 +262,9 @@ const RunStartedEventSchema = BaseEventSchema.extend({
       deploymentId: z.string().optional(),
       workflowName: z.string().optional(),
       executionContext: z.record(z.string(), z.any()).optional(),
+      // Carried so the resilient-start path can set initial attributes
+      // (e.g. lineage keys) when it bootstraps the run from the queue.
+      attributes: z.record(z.string(), z.string()).optional(),
     })
     .optional(),
 });

@@ -140,6 +140,13 @@ export interface CreateWorkflowRunRequest {
   input: SerializedData;
   executionContext?: SerializedData;
   specVersion?: number;
+  /**
+   * Plaintext attributes to set on the run at creation, so it can be found
+   * later via the `attributes` filter on list. Reserved `$`-prefixed keys are
+   * permitted here because the caller is framework-level (e.g. the runtime
+   * setting its own keys).
+   */
+  attributes?: Record<string, string>;
 }
 
 export interface GetWorkflowRunParams {
@@ -149,6 +156,13 @@ export interface GetWorkflowRunParams {
 export interface ListWorkflowRunsParams {
   workflowName?: string;
   status?: WorkflowRunStatus;
+  /**
+   * Filter to runs whose attributes match every given key/value pair.
+   * Pairs with the `attributes` set at run creation: tag related runs
+   * (tenant, user, schedule, ...) and list them as a group. Reserved keys
+   * the runtime sets (e.g. `$rootRunId`) are queryable the same way.
+   */
+  attributes?: Record<string, string>;
   pagination?: PaginationOptions;
   resolveData?: ResolveData;
 }

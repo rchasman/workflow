@@ -38,6 +38,13 @@ export interface StartOptionsBase {
    * The spec version to use for the workflow run. Defaults to the latest version.
    */
   specVersion?: number;
+
+  /**
+   * Plaintext attributes to set on the run at creation. Use them to tag a run
+   * (tenant, user, schedule, ...) so it can be found later via the `attributes`
+   * filter on `list()`.
+   */
+  attributes?: Record<string, string>;
 }
 
 export interface StartOptionsWithDeploymentId extends StartOptionsBase {
@@ -170,6 +177,9 @@ export async function start<TArgs extends unknown[], TResult>(
       // (required for future E2E encryption where runId is part of the encryption context)
       const runId = `wrun_${ulid()}`;
 
+      // Plaintext attributes the caller asked to set on the run at creation.
+      const attributes = opts.attributes;
+
       // Serialize current trace context to propagate across queue boundary
       const traceCarrier = await serializeTraceCarrier();
 
@@ -227,6 +237,7 @@ export async function start<TArgs extends unknown[], TResult>(
               workflowName: workflowName,
               input: workflowArguments,
               executionContext,
+              attributes,
             },
           },
           { v1Compat }
@@ -244,6 +255,7 @@ export async function start<TArgs extends unknown[], TResult>(
                     workflowName,
                     specVersion,
                     executionContext,
+                    attributes,
                   },
                 }
               : {}),
