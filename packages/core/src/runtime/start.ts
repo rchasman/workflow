@@ -23,6 +23,47 @@ import { version as workflowCoreVersion } from '../version.js';
 import { getWorkflowQueueName } from './helpers.js';
 import { Run } from './run.js';
 import { getWorldLazy } from './get-world-lazy.js';
+import { contextStorage } from '../step/context-storage.js';
+
+/** Reserved attribute keys used for cross-run lineage. */
+const ROOT_ID_ATTR = '$rootRunId';
+const PARENT_RUN_ID_ATTR = '$parentRunId';
+
+/**
+ * Compute the lineage attributes for a run being started, so a daisy-chain or
+ * fan-out can be grouped and listed via `list({ attributes: { $rootRunId } })`.
+ *
+ * Lineage is stored as reserved run attributes rather than a dedicated column:
+ * it reuses the attributes mechanism, is preserved across lifecycle updates for
+ * free, and is queryable through the attributes filter.
+ *
+ * - Outside any run, the new run is its own root (`$rootRunId === runId`, no parent).
+ * - Inside a run, inherit the parent's `$rootRunId` so the whole chain stays flat
+ *   under one root regardless of depth, and record `$parentRunId` for the edge.
+ *   The parent run id comes from the ambient step context (`start()` is a
+ *   `'use step'`, so when called from a workflow it runs in the parent's step
+ *   context).
+ *
+ * The one world read here could be avoided by threading the root through the
+ * step context — noted as a perf optimization, not required for correctness.
+ */
+async function resolveLineageAttributes(
+  world: World,
+  runId: string
+): Promise<Record<string, string>> {
+  const parentRunId =
+    contextStorage.getStore()?.workflowMetadata?.workflowRunId;
+  if (!parentRunId) return { [ROOT_ID_ATTR]: runId }; // this run is a root
+
+  let parentRootId = parentRunId;
+  try {
+    const parent = await world.runs.get(parentRunId, { resolveData: 'none' });
+    parentRootId = parent.attributes?.[ROOT_ID_ATTR] ?? parentRunId;
+  } catch {
+    // Parent not readable — anchor the lineage to it.
+  }
+  return { [ROOT_ID_ATTR]: parentRootId, [PARENT_RUN_ID_ATTR]: parentRunId };
+}
 
 /** ULID generator for client-side runId generation */
 const ulid = monotonicFactory();
@@ -40,9 +81,9 @@ export interface StartOptionsBase {
   specVersion?: number;
 
   /**
-   * Plaintext attributes to set on the run at creation. Use them to tag a run
-   * (tenant, user, schedule, ...) so it can be found later via the `attributes`
-   * filter on `list()`.
+   * Extra plaintext attributes to set on the run at creation. Merged after the
+   * automatic lineage attributes (`$rootRunId` / `$parentRunId`), so callers can
+   * tag a run (tenant, user, ...) or override the inherited lineage by hand.
    */
   attributes?: Record<string, string>;
 }
@@ -177,8 +218,12 @@ export async function start<TArgs extends unknown[], TResult>(
       // (required for future E2E encryption where runId is part of the encryption context)
       const runId = `wrun_${ulid()}`;
 
-      // Plaintext attributes the caller asked to set on the run at creation.
-      const attributes = opts.attributes;
+      // Resolve cross-run lineage into reserved attributes ($rootRunId /
+      // $parentRunId), then merge any caller-provided attributes on top.
+      const attributes = {
+        ...(await resolveLineageAttributes(world, runId)),
+        ...opts.attributes,
+      };
 
       // Serialize current trace context to propagate across queue boundary
       const traceCarrier = await serializeTraceCarrier();
