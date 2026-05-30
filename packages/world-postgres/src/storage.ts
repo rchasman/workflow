@@ -122,7 +122,16 @@ export function createRunsStorage(drizzle: Drizzle): Storage['runs'] {
           and(
             map(fromCursor, (c) => lt(runs.runId, c)),
             map(params?.workflowName, (wf) => eq(runs.workflowName, wf)),
-            map(params?.status, (wf) => eq(runs.status, wf))
+            map(params?.status, (wf) => eq(runs.status, wf)),
+            // Attribute filter: jsonb containment matches runs whose
+            // attributes hold every requested key/value (same semantics as
+            // world-local). Filtering by `$rootRunId` returns a whole lineage.
+            map(
+              params?.attributes && Object.keys(params.attributes).length > 0
+                ? params.attributes
+                : undefined,
+              (attrs) => sql`${runs.attributes} @> ${JSON.stringify(attrs)}::jsonb`
+            )
           )
         )
         .orderBy(desc(runs.runId))
