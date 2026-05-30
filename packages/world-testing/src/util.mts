@@ -110,6 +110,22 @@ export function createFetcher(control: Control) {
       const data = (await x.json()) as { count: number };
       return data.count;
     },
+    async listRuns(rootRunId?: string): Promise<
+      { runId: string; rootRunId?: string; status: string; workflowName: string }[]
+    > {
+      const url = new URL(`http://localhost:${control.info.port}/runs`);
+      if (rootRunId) url.searchParams.set('rootRunId', rootRunId);
+      const x = await fetch(url);
+      const data = (await x.json()) as {
+        runs: {
+          runId: string;
+          rootRunId?: string;
+          status: string;
+          workflowName: string;
+        }[];
+      };
+      return data.runs;
+    },
     async getRun(id: string) {
       const x = await fetch(
         `http://localhost:${control.info.port}/runs/${encodeURIComponent(id)}`

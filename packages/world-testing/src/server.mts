@@ -109,6 +109,24 @@ const app = new Hono()
       headers: { 'Content-Type': 'application/json' },
     });
   })
+  .get('/runs', async (ctx) => {
+    // List runs, optionally scoped to a single lineage via ?rootRunId=
+    // (translated to the reserved `$rootRunId` attribute filter).
+    const world = await getWorld();
+    const rootRunId = ctx.req.query('rootRunId');
+    const page = await world.runs.list({
+      ...(rootRunId ? { attributes: { $rootRunId: rootRunId } } : {}),
+      resolveData: 'none',
+    });
+    return ctx.json({
+      runs: page.data.map((r) => ({
+        runId: r.runId,
+        rootRunId: r.attributes?.$rootRunId,
+        status: r.status,
+        workflowName: r.workflowName,
+      })),
+    });
+  })
   .get('/runs/:runId/readable', async (ctx) => {
     const runId = ctx.req.param('runId');
     const run = getRun(runId);
