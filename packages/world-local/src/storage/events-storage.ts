@@ -275,6 +275,7 @@ export function createEventsStorage(
               workflowName?: string;
               input?: any;
               executionContext?: Record<string, any>;
+              attributes?: Record<string, string>;
             };
             if (
               runInputData.deploymentId &&
@@ -298,7 +299,8 @@ export function createEventsStorage(
                 error: undefined,
                 startedAt: undefined,
                 completedAt: undefined,
-                attributes: {},
+                // Initial attributes (e.g. lineage keys) from the queue input.
+                attributes: runInputData.attributes ?? {},
                 createdAt: now,
                 updatedAt: now,
               };
@@ -534,6 +536,7 @@ export function createEventsStorage(
             workflowName: string;
             input: SerializedData;
             executionContext?: Record<string, any>;
+            attributes?: Record<string, string>;
           };
           run = {
             runId: effectiveRunId,
@@ -548,7 +551,8 @@ export function createEventsStorage(
             error: undefined,
             startedAt: undefined,
             completedAt: undefined,
-            attributes: {},
+            // Initial attributes (e.g. lineage keys) set at creation.
+            attributes: runData.attributes ?? {},
             createdAt: now,
             updatedAt: now,
           };

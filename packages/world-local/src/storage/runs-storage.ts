@@ -134,6 +134,14 @@ export function createRunsStorage(
           if (params?.status && run.status !== params.status) {
             return false;
           }
+          // Attribute filter: match runs whose attributes contain every
+          // requested key/value. Filtering by the reserved `$rootRunId` returns a
+          // whole lineage (root + descendants); also serves any other grouping.
+          if (params?.attributes) {
+            for (const [key, value] of Object.entries(params.attributes)) {
+              if (run.attributes?.[key] !== value) return false;
+            }
+          }
           return true;
         },
         sortOrder: params?.pagination?.sortOrder ?? 'desc',
